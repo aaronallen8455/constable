@@ -1,8 +1,8 @@
 cabal-version:      3.0
 name:               constable
 version:            0.1.0.0
--- synopsis:
--- description:
+synopsis: A safe interface for summarizing with the @Const@ functor.
+description: A safe interface for using the @Const@ functor to do summarization. See the @Constable@ module for details.
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Aaron Allen
@@ -15,6 +15,7 @@ extra-doc-files:    CHANGELOG.md
 
 common warnings
     ghc-options: -Wall
+                 -Wno-unticked-promoted-constructors
 
 library
     import:           warnings

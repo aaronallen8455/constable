@@ -37,7 +37,8 @@ test = Summable
 -- :}
 -- <BLANKLINE>
 -- ...
---     • Const used with partial application
+--     • Const used with partially applied constructor: 'Integer
+--                                                       -> Summable'
 -- ...
 
 data Field rec a = Field

@@ -1,3 +1,6 @@
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-| This module provides an interface for the 'Const.Const' functor which facilitates
@@ -37,12 +40,12 @@
    always remember to add explicit type signatures or type applications
    anywhere we use this pattern.
 
-   If we instead use the 'getConstSafe' version of @getConst@ exported by this
+   If we instead use the 'getConstSafe' version of 'Const.getConst' exported by this
    module then we don't need to worry about this issue because the compiler
    will complain if the inferred type of a @Const@ is for a function type.
 
    If you use HLint, you can go one step further and ban the use of the
-   "unsafe" 'getConst' in your codebase using an HLint rule:
+   "unsafe" 'Const.getConst' in your codebase by way of an HLint rule:
 
    @
    - functions:
@@ -50,10 +53,15 @@
    @
 -}
 module Constable
-  ( getConstSafe
+  ( -- * API
+    getConstSafe
   , mkConst
   , mkConstF
-  , Const.Const(Const)
+  , pattern Const
+  -- * Re-export
+  , Const.Const
+  -- * Internal
+  , FullyAppliedConst
   ) where
 
 import           Data.Coerce (coerce)
@@ -61,15 +69,18 @@ import qualified Data.Functor.Const as Const
 import           Data.Kind (Type, Constraint)
 import           GHC.TypeLits (TypeError, ErrorMessage(..))
 
--- | A constraint enforcing that 'getConst' is only used with non-partially
--- applied types.
-type family FullyApplied (a :: Type) :: Constraint where
-  FullyApplied (a -> b) = TypeError (Text "Const used with partial application")
-  FullyApplied a = ()
+-- | A constraint enforcing that 'getConstSafe' is only used with non-partially
+-- applied constructors.
+type family FullyAppliedConst (a :: Type) :: Constraint where
+  FullyAppliedConst (a -> b) =
+    TypeError (Text "Const used with partially applied constructor: '"
+          :<>: ShowType (a -> b)
+          :<>: Text "'")
+  FullyAppliedConst a = ()
 
 -- | Unwraps 'Const.Const'. Throws a type error if that 'Const.Const' has a
 -- function type for its second argument.
-getConstSafe :: FullyApplied b => Const.Const a b -> a
+getConstSafe :: FullyAppliedConst b => Const.Const a b -> a
 getConstSafe = coerce
 
 -- | Smart constructor for 'Const.Const' that enforces that the value it contains is
@@ -89,7 +100,7 @@ getConstSafe = coerce
 --   , s3 = 3
 --   }
 --
--- getConstSafe '$' MkSummable
+-- 'getConstSafe' '$' MkSummable
 --   '<$>' mkConst (s1 test) (Sum . fromIntegral)
 --   '<*>' mkConst (s2 test) Sum
 --   '<*>' mkConst (s3 test) (Sum . fromIntegral)
@@ -101,3 +112,9 @@ mkConst a toM = coerce (toM a)
 -- result type applied to some type constructor @f@.
 mkConstF :: f a -> (f a -> m) -> Const.Const m a
 mkConstF fa toM = coerce (toM fa)
+
+-- | A pattern synonym for 'Const.Const' that upholds the fully applied
+-- constructor invariant for its second type argument.
+pattern Const :: FullyAppliedConst b => a -> Const.Const a b
+pattern Const a = Const.Const a
+{-# COMPLETE Const #-}
