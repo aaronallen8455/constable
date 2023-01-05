@@ -57,9 +57,7 @@ module Constable
     getConstSafe
   , mkConst
   , mkConstF
-  , pattern Const
-  -- * Re-export
-  , Const.Const
+  , Const.Const(Constable.Const)
   -- * Internal
   , FullyAppliedConst
   ) where
